@@ -11,4 +11,8 @@ public class ZoneDateTimeUtils {
         return ZonedDateTime.now(UTC_ZONE_ID);
     }
 
+    public static ZonedDateTime generateOneMinuteAndOneSecondInThePastZoneDateTime() {
+        return generateCurrentZoneDateTime().minusSeconds(61);
+    }
+
 }

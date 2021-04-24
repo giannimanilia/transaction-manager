@@ -1,6 +1,7 @@
 package com.gmaniliapp.transactionmanager.service.statistics;
 
 import static com.gmaniliapp.transactionmanager.utility.ZoneDateTimeUtils.generateCurrentZoneDateTime;
+import static com.gmaniliapp.transactionmanager.utility.ZoneDateTimeUtils.generateOneMinuteAndOneSecondInThePastZoneDateTime;
 
 import com.gmaniliapp.transactionmanager.model.Statistics;
 import com.gmaniliapp.transactionmanager.model.Transaction;
@@ -30,8 +31,8 @@ class StatisticsServiceTests {
     private StatisticsService statisticsService;
 
     @Test
-    void testEmptyStatistics() {
-        logger.info("testEmptyStatistics - START");
+    void testStatisticsWithoutTransactions() {
+        logger.info("testStatisticsWithoutTransactions - START");
 
         Mockito.when(transactionsService.getTransactions()).thenReturn(new ReadWriteArrayList<>());
 
@@ -41,7 +42,26 @@ class StatisticsServiceTests {
 
         Assertions.assertEquals(emptyStatistics, resultStatistics);
 
-        logger.info("testEmptyStatistics - END");
+        logger.info("testStatisticsWithoutTransactions - END");
+    }
+
+    @Test
+    void testStatisticsWithJustOneTransaction() {
+        logger.info("testStatisticsWithJustOneTransaction - START");
+
+        ReadWriteArrayList<Transaction> transactions = new ReadWriteArrayList<>();
+        transactions.add(new Transaction(BigDecimal.valueOf(1.11), generateCurrentZoneDateTime()));
+
+        Mockito.when(transactionsService.getTransactions()).thenReturn(transactions);
+
+        Statistics statistics = new Statistics(BigDecimal.valueOf(1.11), BigDecimal.valueOf(1.11),
+            BigDecimal.valueOf(1.11), BigDecimal.valueOf(1.11), 1);
+
+        Statistics resultStatistics = statisticsService.calculateLastMinuteStatistics();
+
+        Assertions.assertEquals(statistics, resultStatistics);
+
+        logger.info("testStatisticsWithJustOneTransaction - END");
     }
 
     @Test
@@ -168,6 +188,47 @@ class StatisticsServiceTests {
         Assertions.assertEquals(statistics, resultStatistics);
 
         logger.info("testDecimalScaleStatistics - END");
+    }
+
+    @Test
+    void testStatisticsWithAllTransactionsExpired() {
+        logger.info("testStatisticsWithAllTransactionsExpired - START");
+
+        ReadWriteArrayList<Transaction> transactions = new ReadWriteArrayList<>();
+        transactions.add(new Transaction(BigDecimal.valueOf(1.11), generateOneMinuteAndOneSecondInThePastZoneDateTime()));
+        transactions.add(new Transaction(BigDecimal.valueOf(2.22), generateOneMinuteAndOneSecondInThePastZoneDateTime()));
+        transactions.add(new Transaction(BigDecimal.valueOf(3.33), generateOneMinuteAndOneSecondInThePastZoneDateTime()));
+
+        Mockito.when(transactionsService.getTransactions()).thenReturn(transactions);
+
+        Statistics emptyStatistics = StatisticsUtils.generateEmptyStatistics();
+
+        Statistics resultStatistics = statisticsService.calculateLastMinuteStatistics();
+
+        Assertions.assertEquals(emptyStatistics, resultStatistics);
+
+        logger.info("testStatisticsWithAllTransactionsExpired - END");
+    }
+
+    @Test
+    void testStatisticsWithSomeTransactionsExpired() {
+        logger.info("testStatisticsWithSomeTransactionsExpired - START");
+
+        ReadWriteArrayList<Transaction> transactions = new ReadWriteArrayList<>();
+        transactions.add(new Transaction(BigDecimal.valueOf(1.11), generateCurrentZoneDateTime()));
+        transactions.add(new Transaction(BigDecimal.valueOf(2.22), generateCurrentZoneDateTime()));
+        transactions.add(new Transaction(BigDecimal.valueOf(3.33), generateOneMinuteAndOneSecondInThePastZoneDateTime()));
+
+        Mockito.when(transactionsService.getTransactions()).thenReturn(transactions);
+
+        Statistics statistics = new Statistics(BigDecimal.valueOf(3.33), BigDecimal.valueOf(1.67),
+            BigDecimal.valueOf(2.22), BigDecimal.valueOf(1.11), 2);
+
+        Statistics resultStatistics = statisticsService.calculateLastMinuteStatistics();
+
+        Assertions.assertEquals(statistics, resultStatistics);
+
+        logger.info("testStatisticsWithSomeTransactionsExpired - END");
     }
 
 }
